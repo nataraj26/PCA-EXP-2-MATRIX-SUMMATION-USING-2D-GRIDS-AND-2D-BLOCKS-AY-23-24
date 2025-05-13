@@ -1,9 +1,8 @@
 # PCA-EXP-2-Matrix-Summation-using-2D-Grids-and-2D-Blocks-AY-23-24
 
-<h3>AIM:</h3>
-<h3>ENTER YOUR NAME</h3>
-<h3>ENTER YOUR REGISTER NO</h3>
-<h3>EX. NO</h3>
+<h3>AIM: To perform matrix summation using 2D grids and 2D blocks </h3>
+<h3>ENTER YOUR NAME: NATARAJ KUMARAN S</h3>
+<h3>ENTER YOUR REGISTER NO: 212223230137</h3>
 <h3>DATE</h3>
 <h1> <align=center> MATRIX SUMMATION WITH A 2D GRID AND 2D BLOCKS </h3>
 i.  Use the file sumMatrixOnGPU-2D-grid-2D-block.cu
@@ -35,10 +34,81 @@ Google Colab with NVCC Compiler
 12.	Reset the device: Reset the device using cudaDeviceReset to ensure that all resources are cleaned up before the program exits.
 
 ## PROGRAM:
-TYPE YOUR CODE HERE
+```c
+
+#include<iostream>
+#include<cuda_runtime.h>
+#include"cuda_utils.cuh"
+
+//#define N 10000
+
+//#define N 1000 // for threads since their limit is 1024
+
+#define N (33*1024)
+
+// Using Blocks 
+
+//__global__ void add(int* a, int* b, int* c) {
+//	int tid = blockIdx.x;
+//	if(tid<N){
+//		c[tid] = a[tid] + b[tid];
+//	}
+//}
+
+// Using Threads
+
+//__global__ void add(int* a, int* b, int* c) {
+//	int tid = threadIdx.x;
+//	if (tid < N) {
+//		c[tid] = a[tid] + b[tid];
+//	}
+//}
+
+// Using Threads and Blocks
+
+__global__ void add(int* a, int* b, int* c) {
+	int tid = threadIdx.x + blockIdx.x * blockDim.x;
+	while (tid < N) {
+		c[tid] = a[tid] + b[tid];
+		tid += blockDim.x * gridDim.x;
+	}
+}
+
+
+void performVecAdd() {
+	int a[N], b[N], c[N];
+	int* dev_a, * dev_b, * dev_c;
+
+	HANDLE_ERROR(cudaMalloc((void**)&dev_a, N * sizeof(int)));
+	HANDLE_ERROR(cudaMalloc((void**)&dev_b, N * sizeof(int)));
+	HANDLE_ERROR(cudaMalloc((void**)&dev_c, N * sizeof(int)));
+
+	for (int i = 0;i < N;i++) {
+		a[i] = -i;
+		b[i] = i * i;
+	}
+
+	HANDLE_ERROR(cudaMemcpy(dev_a, &a, N * sizeof(int), cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(dev_b, &b, N * sizeof(int), cudaMemcpyHostToDevice));
+
+	//add << <N, 1 >> > (dev_a, dev_b, dev_c); // For blocks
+	//add << <1, N >> > (dev_a, dev_b, dev_c); // For threads
+	add << <128, 128 >> > (dev_a, dev_b, dev_c); // For blocks and threads
+	HANDLE_ERROR(cudaMemcpy(c, dev_c, N * sizeof(int), cudaMemcpyDeviceToHost));
+
+	for (int i = 0;i < N;i++) {
+		std::cout << a[i] << "+" << b[i] << " = " << c[i] << "\n";
+	}
+
+	cudaFree(dev_a);
+	cudaFree(dev_b);
+	cudaFree(dev_c);
+}
+
+```
 
 ## OUTPUT:
-SHOW YOUR OUTPUT HERE
+![image](https://github.com/user-attachments/assets/30d30275-2aeb-473f-915a-e845ec58b170)
 
 ## RESULT:
 The host took _________ seconds to complete it’s computation, while the GPU outperforms the host and completes the computation in ________ seconds. Therefore, float variables in the GPU will result in the best possible result. Thus, matrix summation using 2D grids and 2D blocks has been performed successfully.
